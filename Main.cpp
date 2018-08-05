@@ -52,7 +52,7 @@ int main()
 	int32_t buf_size = (int32_t)(_CHANNEL_NUM * _SAMPLE_PER_SECOND * _BUFFER_PER_SEC) * 2;
 	bool is_quit = false;
 
-	const char* path_src = "sample data\\sample.ptcop";
+	const char* path_src = "sample.ptcop";
 
 	printf("init\n");
 
