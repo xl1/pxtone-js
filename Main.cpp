@@ -1,33 +1,13 @@
 ﻿
 #define _CRT_SECURE_NO_WARNINGS
 
-#define WIN32_LEAN_AND_MEAN
-
 #include <stdio.h>
 #include <cstdint>
-
-#include <shlwapi.h>
-#pragma comment(lib,"shlwapi")
-
-#include <commctrl.h>
-#pragma comment(lib,"comctl32")
-
-#pragma comment( lib, "winmm" )
-#pragma comment( lib, "imm32" )
-#include              <imm.h>
-
-#include <vector>
-
-using namespace std;
 
 #include <tchar.h>
 
 #include "./pxtone/pxtnService.h"
 #include "./pxtone/pxtnError.h"
-
-static const TCHAR* _app_name = _T("pxtone-play-sample");
-
-#include <CommDlg.h>
 
 #define _CHANNEL_NUM           2
 #define _SAMPLE_PER_SECOND 44100
@@ -60,8 +40,6 @@ term:
 
 int main()
 {
-	if( FAILED( CoInitializeEx( NULL, COINIT_MULTITHREADED ) ) ) return 0;
-
 	bool           b_ret    = false;
 	pxtnService*   pxtn     = NULL ;
 	pxtnERR        pxtn_err = pxtnERR_VOID;
