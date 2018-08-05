@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <cstdint>
 
-#include <tchar.h>
-
 #include "./pxtone/pxtnService.h"
 #include "./pxtone/pxtnError.h"
 
@@ -13,7 +11,7 @@
 #define _SAMPLE_PER_SECOND 44100
 #define _BUFFER_PER_SEC    (0.3f)
 
-static bool _load_ptcop( pxtnService* pxtn, const TCHAR* path_src, pxtnERR* p_pxtn_err )
+static bool _load_ptcop( pxtnService* pxtn, const char* path_src, pxtnERR* p_pxtn_err )
 {
 	bool           b_ret     = false;
 	pxtnDescriptor desc;
@@ -21,7 +19,7 @@ static bool _load_ptcop( pxtnService* pxtn, const TCHAR* path_src, pxtnERR* p_px
 	FILE*          fp        = NULL;
 	int32_t        event_num =    0;
 
-	if( !( fp = _tfopen( path_src, _T("rb") ) ) ) goto term;
+	if( !( fp = fopen( path_src, "rb" ) ) ) goto term;
 	if( !desc.set_file_r( fp ) ) goto term;
 
 	pxtn_err = pxtn->read       ( &desc ); if( pxtn_err != pxtnOK ) goto term;
@@ -44,13 +42,17 @@ int main()
 	pxtnService*   pxtn     = NULL ;
 	pxtnERR        pxtn_err = pxtnERR_VOID;
 
+	const int BUFFER_COUNT = 3;
+	uint8_t* bufs[BUFFER_COUNT];
+	int32_t buf_size = (int32_t)(_CHANNEL_NUM * _SAMPLE_PER_SECOND * _BUFFER_PER_SEC) * 2;
+	bool is_quit = false;
+
+	const char* path_src = "sample data\\sample.ptcop";
+
 	// INIT PXTONE.
 	pxtn = new pxtnService();
 	pxtn_err = pxtn->init(); if( pxtn_err != pxtnOK ) goto term;
 	if( !pxtn->set_destination_quality( _CHANNEL_NUM, _SAMPLE_PER_SECOND ) ) goto term;
-
-	// SELECT MUSIC FILE.
-	TCHAR* path_src = _T("sample data\\sample.ptcop");
 	
 	// LOAD MUSIC FILE.
 	if( !_load_ptcop( pxtn, path_src, &pxtn_err ) ) goto term;
@@ -66,11 +68,6 @@ int main()
 
 		if( !pxtn->moo_preparation( &prep ) ) goto term;
 	}
-
-	const int BUFFER_COUNT = 3;
-	uint8_t* bufs[BUFFER_COUNT];
-	int32_t buf_size = (int32_t)(_CHANNEL_NUM * _SAMPLE_PER_SECOND * _BUFFER_PER_SEC) * 2;
-	bool is_quit = false;
 
 	for (int i = 0; i < BUFFER_COUNT; i++)
 	{
@@ -97,10 +94,7 @@ term:
 
 	if( !b_ret )
 	{
-		// ERROR MESSAGE.
-		TCHAR err_msg[ 100 ] = {0};
-		_stprintf_s( err_msg, 100, _T("ERROR: pxtnERR[ %s ]"), pxtnError_get_string( pxtn_err ) );
-		printf(err_msg);
+		printf("ERROR: pxtnERR[ %s ]", pxtnError_get_string( pxtn_err ) );
 	}
 
 	SAFE_DELETE( pxtn );
