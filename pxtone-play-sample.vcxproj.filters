@@ -70,7 +70,6 @@
       <Filter>pxtone</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="SimpleXAudio2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pxtone\pxtn.h">
@@ -133,6 +132,5 @@
     <ClInclude Include="pxtone\pxtnError.h">
       <Filter>pxtone</Filter>
     </ClInclude>
-    <ClInclude Include="project01\SimpleXAudio2.h" />
   </ItemGroup>
 </Project>

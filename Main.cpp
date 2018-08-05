@@ -3,7 +3,6 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include <windows.h>
 #include <stdio.h>
 #include <cstdint>
 
@@ -26,8 +25,6 @@ using namespace std;
 #include "./pxtone/pxtnService.h"
 #include "./pxtone/pxtnError.h"
 
-#include "./SimpleXAudio2.h"
-
 static const TCHAR* _app_name = _T("pxtone-play-sample");
 
 #include <CommDlg.h>
@@ -35,28 +32,6 @@ static const TCHAR* _app_name = _T("pxtone-play-sample");
 #define _CHANNEL_NUM           2
 #define _SAMPLE_PER_SECOND 44100
 #define _BUFFER_PER_SEC    (0.3f)
-
-static bool _SelFile_OpenLoad( HWND hwnd, TCHAR *path_get, const TCHAR *path_def_dir, const TCHAR *title, const TCHAR *ext, const TCHAR *filter )
-{
-	OPENFILENAME ofn = {0};
-
-	ofn.lStructSize     = sizeof(OPENFILENAME);
-	ofn.hwndOwner       = hwnd        ;
-	ofn.lpstrFilter     = filter      ;
-	ofn.lpstrFile       = path_get    ;
-	ofn.nMaxFile        = MAX_PATH    ;
-	ofn.lpstrFileTitle  = NULL        ;
-	ofn.nMaxFileTitle   =            0;
-	ofn.lpstrInitialDir = path_def_dir;
-	ofn.lpstrTitle      = title       ;
-	ofn.Flags           = OFN_FILEMUSTEXIST|OFN_HIDEREADONLY|OFN_PATHMUSTEXIST;
-	ofn.lpstrDefExt     = ext         ;
-
-	if( GetOpenFileName( &ofn ) ) return true;
-
-	return false;
-}
-
 
 static bool _load_ptcop( pxtnService* pxtn, const TCHAR* path_src, pxtnERR* p_pxtn_err )
 {
@@ -83,43 +58,6 @@ term:
 	return b_ret;
 }
 
-// Shift-JIS to UNICODE.
-static bool _sjis_to_wide( const char*    p_src, wchar_t** pp_dst, int32_t* p_dst_num  )
-{
-	bool     b_ret     = false;
-	wchar_t* p_wide    = NULL ;
-	int      num_wide  =     0;
-
-	if( !p_src    ) return false;
-	if( p_dst_num ) *p_dst_num = 0;
-	*pp_dst = NULL;
-
-	// to UTF-16
-	if( !(num_wide = ::MultiByteToWideChar( CP_ACP, 0, p_src, -1, NULL, 0 ) ) ) goto term; 
-	if( !(  p_wide = (wchar_t*)malloc( num_wide * sizeof(wchar_t) ) )         ) goto term;
-	memset( p_wide, 0,                 num_wide * sizeof(wchar_t) );
-	if( !MultiByteToWideChar( CP_ACP, 0, p_src, -1, p_wide, num_wide )        ) goto term;
-
-	if( p_dst_num ) *p_dst_num = num_wide - 1; // remove last ' '
-	*pp_dst = p_wide;
-
-	b_ret = true;
-term:
-	if( !b_ret ) free( p_wide );
-
-	return b_ret;
-}
-
-static bool _sampling_func( void *user, void *buf, int *p_res_size, int *p_req_size )
-{
-	pxtnService* pxtn = static_cast<pxtnService*>( user );
-
-	if( !pxtn->Moo( buf, *p_req_size ) ) return false;
-	if( p_res_size ) *p_res_size = *p_req_size;
-
-	return true;
-}
-
 int main()
 {
 	if( FAILED( CoInitializeEx( NULL, COINIT_MULTITHREADED ) ) ) return 0;
@@ -127,14 +65,6 @@ int main()
 	bool           b_ret    = false;
 	pxtnService*   pxtn     = NULL ;
 	pxtnERR        pxtn_err = pxtnERR_VOID;
-	SimpleXAudio2* xa2      = NULL ;
-
-	static const TCHAR* title  = _T("load ptcop");
-	static const TCHAR* ext    = _T("ptcop"     );
-	static const TCHAR* filter =
-		_T("ptcop {*.ptcop}\0*.ptcop*\0"   )
-		_T("pttune {*.pttune}\0*.pttune*\0")
-		_T("All files {*.*}\0*.*\0\0"      );
 
 	// INIT PXTONE.
 	pxtn = new pxtnService();
@@ -159,15 +89,30 @@ int main()
 		if( !pxtn->moo_preparation( &prep ) ) goto term;
 	}
 
-	// INIT XAudio2.
-	xa2 = new SimpleXAudio2();
-	if( !xa2->init( _CHANNEL_NUM, _SAMPLE_PER_SECOND, _BUFFER_PER_SEC ) ) goto term;
+	const int BUFFER_COUNT = 3;
+	uint8_t* bufs[BUFFER_COUNT];
+	int32_t buf_size = (int32_t)(_CHANNEL_NUM * _SAMPLE_PER_SECOND * _BUFFER_PER_SEC) * 2;
+	bool is_quit = false;
 
-	// START XAudio2.
-	xa2->start( _sampling_func, pxtn, 0, NULL );
+	for (int i = 0; i < BUFFER_COUNT; i++)
+	{
+		if (!(bufs[i] = (uint8_t*)malloc(buf_size))) goto term;
+		memset(bufs[i], 0, buf_size);
+	}
 
-	printf("Playing...");
-	getchar();
+	printf("enter to next, q to quit\n");
+	do
+	{
+		for (int i = 0; i < BUFFER_COUNT; i++)
+		{
+			if (!pxtn->Moo(bufs[i], buf_size)) goto term;
+
+			for (int j = 0; j < 8; j++)
+				printf("%02X ", bufs[i][j]);
+			printf("\n");
+		}
+		is_quit = getchar() == 'q';
+	} while (!is_quit);
 
 	b_ret = true;
 term:
@@ -178,15 +123,6 @@ term:
 		TCHAR err_msg[ 100 ] = {0};
 		_stprintf_s( err_msg, 100, _T("ERROR: pxtnERR[ %s ]"), pxtnError_get_string( pxtn_err ) );
 		printf(err_msg);
-	}
-
-	// RELEASE XAudio2.
-	if( xa2 )
-	{
-		xa2->order_stop();
-		for( int i = 0; i < 20; i++ ){ if( !xa2->is_working() ) break; Sleep( 100 ); }
-		xa2->join( 3 );
-		SAFE_DELETE( xa2 );
 	}
 
 	SAFE_DELETE( pxtn );
