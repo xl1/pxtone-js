@@ -29,16 +29,18 @@ bool pxtnDescriptor::set_file_r  ( FILE *fd )
 {
 	if( !fd ) return false;
 
-	fpos_t sz;
+	//fpos_t sz;
 	if( fseek  ( fd, 0, SEEK_END ) ) return false;
-	if( fgetpos( fd, &sz         ) ) return false;
+	int32_t size = ftell(fd);
+	//if( fgetpos( fd, &sz         ) ) return false;
 	if( fseek  ( fd, 0, SEEK_SET ) ) return false;
 	_p_desc = fd  ;
 
 #ifdef pxSCE
 	_size   = (int32_t)sz._Off;
 #else
-	_size   = (int32_t)sz;
+	//_size   = (int32_t)(long)sz;
+	_size = size;
 #endif
 
 	_b_file = true;
