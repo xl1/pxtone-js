@@ -120,16 +120,14 @@ static bool _sampling_func( void *user, void *buf, int *p_res_size, int *p_req_s
 	return true;
 }
 
-int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmd, int nCmd )
+int main()
 {
-	InitCommonControls();
 	if( FAILED( CoInitializeEx( NULL, COINIT_MULTITHREADED ) ) ) return 0;
 
 	bool           b_ret    = false;
 	pxtnService*   pxtn     = NULL ;
 	pxtnERR        pxtn_err = pxtnERR_VOID;
 	SimpleXAudio2* xa2      = NULL ;
-	TCHAR          path_src[ MAX_PATH ] = {0};
 
 	static const TCHAR* title  = _T("load ptcop");
 	static const TCHAR* ext    = _T("ptcop"     );
@@ -144,12 +142,8 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmd, int nCmd )
 	if( !pxtn->set_destination_quality( _CHANNEL_NUM, _SAMPLE_PER_SECOND ) ) goto term;
 
 	// SELECT MUSIC FILE.
-	if( !_SelFile_OpenLoad( NULL, path_src, NULL, title, ext, filter ) )
-	{
-		b_ret = true;
-		goto term;
-	};
-
+	TCHAR* path_src = _T("sample data\\sample.ptcop");
+	
 	// LOAD MUSIC FILE.
 	if( !_load_ptcop( pxtn, path_src, &pxtn_err ) ) goto term;
 
@@ -172,31 +166,8 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmd, int nCmd )
 	// START XAudio2.
 	xa2->start( _sampling_func, pxtn, 0, NULL );
 
-	// GET MUSIC NAME AND MESSAGE-BOX.
-	{
-		TCHAR         text[ 250 ] = { 0 };
-		TCHAR*        name_t      = NULL ;
-		const TCHAR*  p_name      = NULL ;
-		int32_t       buf_size    =   0  ;
-
-#ifdef UNICODE
-		if( _sjis_to_wide( pxtn->text->get_name_buf( &buf_size ), &name_t, NULL ) )
-		{
-			p_name = name_t;
-		}
-		else
-		{
-			p_name = _T("none");
-		}
-#else
-		if( !( p_name = pxtn->text->get_name_buf( &buf_size ) ) ) p_name = PathFindFileName( path_src );
-#endif
-
-		_stprintf_s( text, 250, _T("file: %s\r\n") _T("name: %s"), PathFindFileName( path_src ), p_name );
-
-		if( name_t ) free( name_t );
-		MessageBox( NULL, text, _app_name, MB_OK );
-	}
+	printf("Playing...");
+	getchar();
 
 	b_ret = true;
 term:
@@ -206,7 +177,7 @@ term:
 		// ERROR MESSAGE.
 		TCHAR err_msg[ 100 ] = {0};
 		_stprintf_s( err_msg, 100, _T("ERROR: pxtnERR[ %s ]"), pxtnError_get_string( pxtn_err ) );
-		MessageBox( NULL, err_msg, _app_name, MB_OK );
+		printf(err_msg);
 	}
 
 	// RELEASE XAudio2.
