@@ -13,13 +13,14 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FE623CC3-E5CA-4F0B-994C-C711F809D9FA}</ProjectGuid>
     <RootNamespace>pxtoneplaysample</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -39,7 +40,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libogg\include;$(SolutionDir)libvorbis\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdk_IncludePath);$(FrameworkSDKDir)\include;</IncludePath>
+    <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libogg\include;$(SolutionDir)libvorbis\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdk_IncludePath);$(FrameworkSDKDir)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libogg\include;$(SolutionDir)libvorbis\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdk_IncludePath);$(FrameworkSDKDir)\include;</IncludePath>
