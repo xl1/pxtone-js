@@ -28,8 +28,13 @@ static bool _load_ptcop( pxtnService* pxtn, const char* path_src, pxtnERR* p_pxt
 	b_ret = true;
 term:
 
-	if( fp     ) fclose( fp );
-	if( !b_ret ) pxtn->evels->Release();
+	if (fp) {
+		fclose(fp);
+	}
+	else {
+		perror("Cannot open file: ");
+	}
+	if( !b_ret ) pxtn->evels->Release();;
 
 	if( p_pxtn_err ) *p_pxtn_err = pxtn_err;
 
@@ -49,13 +54,19 @@ int main()
 
 	const char* path_src = "sample data\\sample.ptcop";
 
+	printf("init\n");
+
 	// INIT PXTONE.
 	pxtn = new pxtnService();
 	pxtn_err = pxtn->init(); if( pxtn_err != pxtnOK ) goto term;
 	if( !pxtn->set_destination_quality( _CHANNEL_NUM, _SAMPLE_PER_SECOND ) ) goto term;
-	
+
+	printf("load music file\n");
+
 	// LOAD MUSIC FILE.
 	if( !_load_ptcop( pxtn, path_src, &pxtn_err ) ) goto term;
+
+	printf("prepare pxtone\n");
 
 	// PREPARATION PLAYING MUSIC.
 	{
