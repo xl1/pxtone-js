@@ -4,10 +4,20 @@ const BUFFER_BYTES = BUFFER_SIZE * NUMBER_OF_CHANNELS * 2;
 const BITS_PER_SAMPLE = 16;
 const SAMPLING_RATE = new AudioContext().sampleRate;
 
+function readBlobAsArrayBufferAsync(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = _ => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+    });
+}
+
 class PxtoneAudio {
     isRunning = false;
 
     constructor(pxtn) {
+        this.pxtn = pxtn;
         this.ctx = new AudioContext();
         this.procNode = this.ctx.createScriptProcessor(BUFFER_SIZE, 0, NUMBER_OF_CHANNELS);
 
@@ -24,6 +34,26 @@ class PxtoneAudio {
                 }
             }
         });
+    }
+
+    async loadFileAsync(blob) {
+        const fileBuffer = await readBlobAsArrayBufferAsync(blob);
+        const buffer = Module._malloc(fileBuffer.byteLength);
+        Module.HEAPU8.set(new Uint8Array(fileBuffer), buffer);
+
+        const err = Module.ccall('pxtnServiceLoad', 'number', ['number', 'number', 'number'], [this.pxtn.$$.ptr, buffer, fileBuffer.byteLength]);
+        Module._free(buffer);
+
+        if (err) throw new Error(Module.pxtnErrorToString({ value: err }));
+
+        const prep = {
+            flags: 1, // loop,
+            startPosition: 0.0,
+            masterVolume: 0.8,
+        };
+        if (!Module.pxtnServiceMooPreparation(this.pxtn, prep)) {
+            throw new Error('failed to prepare');
+        }
     }
 
     start() {
@@ -50,36 +80,20 @@ function init() {
         return;
     }
 
-    // load file
-    error = Module.pxtnLoadPtcop(pxtn, 'sample.ptcop');
-    if (error && error.value != 0) {
-        alert(Module.pxtnErrorToString(error));
-        return;
-    }
-
-    console.log(`total sample: ${pxtn.totalSample}`);
-
-    const prep = {
-        flags: 1, // loop,
-        startPosition: 0.0,
-        masterVolume: 0.8,
-    };
-    if (!Module.pxtnServiceMooPreparation(pxtn, prep)) {
-        alert('failed to prepare');
-        return;
-    }
-
     const audio = new PxtoneAudio(pxtn);
-    const button = document.createElement('button');
-    button.append('start');
-    button.addEventListener('click', () => {
-        if (audio.isRunning) {
-            audio.pause();
-        } else {
-            audio.start();
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.ptcop,.pttune';
+    input.addEventListener('change', _ => {
+        audio.pause();
+        const file = input.files[0];
+        if (file) {
+            audio.loadFileAsync(file)
+                .then(() => audio.start())
+                .catch(err => alert(err.message || err));
         }
     }, false);
-    document.body.append(button);
+    document.body.append(input);
 }
 
 this.Module = {
