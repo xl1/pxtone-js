@@ -14,10 +14,9 @@ function readBlobAsArrayBufferAsync(blob) {
 }
 
 class PxtoneAudio {
-    isRunning = false;
-
     constructor(pxtn) {
         this.pxtn = pxtn;
+        this.isRunning = false;
         this.ctx = new AudioContext();
         this.procNode = this.ctx.createScriptProcessor(BUFFER_SIZE, 0, NUMBER_OF_CHANNELS);
 
