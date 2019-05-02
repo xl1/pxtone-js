@@ -1,3 +1,2 @@
 for i in ../pxtone/*.cpp; do emcc -c $i; done
-emcc -s WASM=1 -O1 -o index.html --pre-js pre.js *.o ../Main.cpp
-
+emcc --bind -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall']" -o pxtone.js -O2 *.o ../emscripten_bindings.cpp
