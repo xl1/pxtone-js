@@ -14,16 +14,25 @@ function readBlobAsArrayBufferAsync(blob) {
 }
 
 class PxtoneAudio {
-    constructor(pxtn) {
-        this.pxtn = pxtn;
+    constructor() {
         this.isRunning = false;
+        this.pxtn = new Module.PxtnService();
+
+        const error = this.pxtn.init();
+        if (error && error.value != 0) {
+            throw new Error(Module.pxtnErrorToString(error));
+        }
+        if (!this.pxtn.setDestinationQuality(NUMBER_OF_CHANNELS, SAMPLING_RATE)) {
+            throw new Error('failed to set destination quality');
+        }
+
         this.ctx = new AudioContext();
         this.procNode = this.ctx.createScriptProcessor(BUFFER_SIZE, 0, NUMBER_OF_CHANNELS);
 
         const buffer = Module._malloc(BUFFER_BYTES);
 
         this.procNode.addEventListener('audioprocess', ({ outputBuffer }) => {
-            const result = Module.ccall('pxtnServiceMoo', 'bool', ['number', 'number', 'number'], [pxtn.$$.ptr, buffer, BUFFER_BYTES]);
+            Module.ccall('pxtnServiceMoo', 'bool', ['number', 'number', 'number'], [this.pxtn.$$.ptr, buffer, BUFFER_BYTES]);
             const input = new Int16Array(Module.HEAP16.buffer, buffer, BUFFER_SIZE * NUMBER_OF_CHANNELS);
 
             for (let ch = 0; ch < NUMBER_OF_CHANNELS; ch++) {
@@ -57,6 +66,7 @@ class PxtoneAudio {
 
     start() {
         this.isRunning = true;
+        this.ctx.resume();
         this.procNode.connect(this.ctx.destination);
     }
     pause() {
@@ -66,20 +76,7 @@ class PxtoneAudio {
 }
 
 function init() {
-    const pxtn = new Module.PxtnService();
-
-    let error = pxtn.init();
-    if (error && error.value != 0) {
-        alert(Module.pxtnErrorToString(error));
-        return;
-    }
-
-    if (!pxtn.setDestinationQuality(NUMBER_OF_CHANNELS, SAMPLING_RATE)) {
-        alert('failed to set destination quality');
-        return;
-    }
-
-    const audio = new PxtoneAudio(pxtn);
+    const audio = new PxtoneAudio();
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.ptcop,.pttune';
@@ -89,7 +86,7 @@ function init() {
         if (file) {
             audio.loadFileAsync(file)
                 .then(() => audio.start())
-                .catch(err => alert(err.message || err));
+                .catch(console.error);
         }
     }, false);
     document.body.append(input);
